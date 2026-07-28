@@ -55,7 +55,14 @@ cc_binary {
 
 cc_binary {
     name: "vendor.lineage.health-service.default",
-    vendor: true,
+    // NX809J: re-homed odm -> system_ext. This device rides the STOCK ZTE /vendor
+    // and ships a STOCK-derived /odm, so anything installed to those partitions is
+    // overwritten and never reaches the device. /system_ext is a partition we build
+    // and flash, and it is where the device sepolicy labels this binary
+    // (device/nubia/NX809J/sepolicy/system_ext/file_contexts ->
+    // hal_lineage_health_default_exec, a coredomain). Keep in sync with the .rc exec
+    // path and with the vintf fragment, which MUST be type="framework" on system_ext.
+    system_ext_specific: true,
     relative_install_path: "hw",
     init_rc: ["vendor.lineage.health-service.default.rc"],
     vintf_fragments: ["vendor.lineage.health-service.default.xml"],

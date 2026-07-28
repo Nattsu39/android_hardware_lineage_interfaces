@@ -1,4 +1,13 @@
-service vendor.lineage_health /vendor/bin/hw/vendor.lineage.health-service.default
+service vendor.lineage_health /system_ext/bin/hw/vendor.lineage.health-service.default
     class hal
     user system
     group system
+
+# NX809J: the charge-limiter control node is labeled sysfs_healthd by the stock
+# vendor policy — a vendor type this coredomain HAL can neither name nor write.
+# sysfs supports runtime relabel, so relabel just this FILE to the plat type
+# sysfs_batt_charge_control (device/nubia/NX809J/sepolicy/system_ext/
+# sysfs_batt_charge_control.te grants init relabelto and the HAL rw on it).
+# DAC ownership is handled separately by init.NX809J.rc (chown system system).
+on boot
+    restorecon /sys/class/qcom-battery/charging_enabled

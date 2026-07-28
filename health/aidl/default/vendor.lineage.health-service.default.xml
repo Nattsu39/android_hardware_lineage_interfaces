@@ -1,4 +1,7 @@
-<manifest version="1.0" type="device">
+<!-- NX809J: type MUST be "framework" (not "device") because this HAL is installed
+     to /system_ext. A type="device" fragment on a system-side partition is rejected
+     when the manifests are assembled, and the service then never gets declared. -->
+<manifest version="1.0" type="framework">
     <hal format="aidl">
         <name>vendor.lineage.health</name>
         <version>2</version>
