@@ -4,7 +4,7 @@
 <manifest version="1.0" type="framework">
     <hal format="aidl">
         <name>vendor.lineage.health</name>
-        <version>2</version>
+        <version>3</version>
         <fqname>IChargingControl/default</fqname>
         <fqname>IFastCharge/default</fqname>
     </hal>

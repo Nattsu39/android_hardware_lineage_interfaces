@@ -11,3 +11,4 @@ service vendor.lineage_health /system_ext/bin/hw/vendor.lineage.health-service.d
 # DAC ownership is handled separately by init.NX809J.rc (chown system system).
 on boot
     restorecon /sys/class/qcom-battery/charging_enabled
+    restorecon /sys/class/qcom-battery/battery_charging_enabled

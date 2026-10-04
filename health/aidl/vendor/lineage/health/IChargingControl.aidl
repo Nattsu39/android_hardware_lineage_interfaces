@@ -84,4 +84,17 @@ interface IChargingControl {
      *          for other errors.
      */
     void setChargingLimit(in ChargingLimitInfo limit);
+
+    /** Whether an independently configured battery charging control is available. */
+    boolean isChargingBypassSupported();
+
+    /** Read the battery charging gate; throws on an unreadable or invalid value. */
+    boolean getChargingBypassEnabled();
+
+    /**
+     * Temporarily inhibit battery charging while keeping input power enabled.
+     * Normal charging requests continue to update the policy restored on exit.
+     * The implementation verifies driver readback before acknowledging success.
+     */
+    void setChargingBypassEnabled(in boolean enabled);
 }

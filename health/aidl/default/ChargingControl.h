@@ -12,6 +12,8 @@
 #include <android/binder_auto_utils.h>
 #include <android/binder_status.h>
 #include <string>
+#include <memory>
+#include "ChargingBypass.h"
 
 namespace aidl {
 namespace vendor {
@@ -41,9 +43,16 @@ struct ChargingControl : public BnChargingControl {
     ndk::ScopedAStatus getChargingLimit(ChargingLimitInfo* _aidl_return) override;
     ndk::ScopedAStatus setChargingLimit(const ChargingLimitInfo& limit) override;
 
+    ndk::ScopedAStatus isChargingBypassSupported(bool* _aidl_return) override;
+    ndk::ScopedAStatus getChargingBypassEnabled(bool* _aidl_return) override;
+    ndk::ScopedAStatus setChargingBypassEnabled(bool enabled) override;
+
     binder_status_t dump(int fd, const char** args, uint32_t numArgs) override;
 
   private:
+    std::unique_ptr<ChargingNode> mInputNode;
+    std::unique_ptr<ChargingNode> mBatteryNode;
+    std::unique_ptr<ChargingBypass> mBypass;
     [[maybe_unused]] const ChargingEnabledNode* mChargingEnabledNode;
     [[maybe_unused]] const std::string* mChargingDeadlineNode;
     [[maybe_unused]] const ChargingLimitNode* mChargingLimitNode;

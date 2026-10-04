@@ -5,6 +5,7 @@
  */
 
 #include "ChargingControl.h"
+#include "SysfsChargingNode.h"
 
 #include <android-base/file.h>
 #include <android-base/logging.h>
@@ -88,6 +89,16 @@ ChargingControl::ChargingControl()
 #endif
 #endif
 
+#if defined(HEALTH_CHARGING_BYPASS_PATH) && defined(HEALTH_CHARGING_CONTROL_SUPPORTS_TOGGLE)
+    // Never probe alternative bypass paths: the device must opt in explicitly.
+    if (mChargingEnabledNode && mChargingEnabledNode->path != HEALTH_CHARGING_BYPASS_PATH) {
+        mInputNode = std::make_unique<SysfsChargingNode>(mChargingEnabledNode->path,
+                mChargingEnabledNode->value_true, mChargingEnabledNode->value_false);
+        mBatteryNode = std::make_unique<SysfsChargingNode>(HEALTH_CHARGING_BYPASS_PATH, "1", "0");
+        mBypass = std::make_unique<ChargingBypass>(*mInputNode, *mBatteryNode);
+    }
+#endif
+
 #ifdef HEALTH_CHARGING_CONTROL_SUPPORTS_DEADLINE
 #ifdef HEALTH_CHARGING_CONTROL_DEADLINE_PATH
     mChargingDeadlineNode = &kChargingDeadlineNodes[0];
@@ -137,6 +148,10 @@ ChargingControl::ChargingControl()
 
 #ifdef HEALTH_CHARGING_CONTROL_SUPPORTS_TOGGLE
 ndk::ScopedAStatus ChargingControl::getChargingEnabled(bool* _aidl_return) {
+    if (mBypass) {
+        return mBypass->getChargingEnabled(_aidl_return) ? ndk::ScopedAStatus::ok()
+                : ndk::ScopedAStatus::fromExceptionCode(EX_ILLEGAL_STATE);
+    }
     std::string content;
     if (!android::base::ReadFileToString(mChargingEnabledNode->path, &content, true)) {
         LOG(ERROR) << "Failed to read current charging enabled value";
@@ -158,6 +173,10 @@ ndk::ScopedAStatus ChargingControl::getChargingEnabled(bool* _aidl_return) {
 }
 
 ndk::ScopedAStatus ChargingControl::setChargingEnabled(bool enabled) {
+    if (mBypass) {
+        return mBypass->setChargingEnabled(enabled) ? ndk::ScopedAStatus::ok()
+                : ndk::ScopedAStatus::fromExceptionCode(EX_ILLEGAL_STATE);
+    }
     const auto& value =
             enabled ? mChargingEnabledNode->value_true : mChargingEnabledNode->value_false;
     if (!android::base::WriteStringToFile(value, mChargingEnabledNode->path, true)) {
@@ -280,6 +299,28 @@ ndk::ScopedAStatus ChargingControl::getSupportedMode(int* _aidl_return) {
 #endif
 
     return ndk::ScopedAStatus::ok();
+}
+
+ndk::ScopedAStatus ChargingControl::isChargingBypassSupported(bool* _aidl_return) {
+    *_aidl_return = false;
+#ifdef HEALTH_CHARGING_BYPASS_PATH
+    *_aidl_return = mBypass && access(HEALTH_CHARGING_BYPASS_PATH, R_OK | W_OK) == 0
+            && access(mChargingEnabledNode->path.c_str(), R_OK | W_OK) == 0;
+#endif
+    return ndk::ScopedAStatus::ok();
+}
+
+ndk::ScopedAStatus ChargingControl::getChargingBypassEnabled(bool* _aidl_return) {
+    if (!mBypass) return ndk::ScopedAStatus::fromExceptionCode(EX_UNSUPPORTED_OPERATION);
+    return mBypass->getBypassEnabled(_aidl_return) ? ndk::ScopedAStatus::ok()
+            : ndk::ScopedAStatus::fromExceptionCode(EX_ILLEGAL_STATE);
+}
+
+ndk::ScopedAStatus ChargingControl::setChargingBypassEnabled(bool enabled) {
+    if (!mBypass) return ndk::ScopedAStatus::fromExceptionCode(EX_UNSUPPORTED_OPERATION);
+    if (mBypass->setBypassEnabled(enabled)) return ndk::ScopedAStatus::ok();
+    LOG(ERROR) << "Bypass transition failed; driver state was not acknowledged";
+    return ndk::ScopedAStatus::fromExceptionCode(EX_ILLEGAL_STATE);
 }
 
 binder_status_t ChargingControl::dump(int fd, const char** /* args */, uint32_t /* numArgs */) {

@@ -112,15 +112,28 @@ cc_binary {
     }) + select(soong_config_variable("lineage_health", "fast_charge_value_super_fast_charge"), {
         any @ flag_val: ["-DHEALTH_FAST_CHARGE_VALUE_SUPER_FAST_CHARGE=\"" + flag_val + "\""],
         default: ["-DHEALTH_FAST_CHARGE_VALUE_SUPER_FAST_CHARGE="],
+    }) + select(soong_config_variable("lineage_health", "charging_bypass_path"), {
+        any @ path: ["-DHEALTH_CHARGING_BYPASS_PATH=\"" + path + "\""],
+        default: [],
     }),
+
     srcs: [
         "service.cpp",
         "ChargingControl.cpp",
+        "ChargingBypass.cpp",
         "FastCharge.cpp",
     ],
     shared_libs: [
         "libbase",
         "libbinder_ndk",
-        "vendor.lineage.health-V2-ndk",
+        "vendor.lineage.health-V3-ndk",
     ],
+}
+
+cc_test_host {
+    name: "LineageChargingBypassTests",
+    srcs: ["ChargingBypass.cpp", "tests/ChargingBypassTest.cpp"],
+    local_include_dirs: ["."],
+    cflags: ["-Wall", "-Wextra", "-Werror"],
+    test_suites: ["general-tests"],
 }

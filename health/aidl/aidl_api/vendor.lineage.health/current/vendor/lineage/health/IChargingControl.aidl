@@ -31,4 +31,7 @@ interface IChargingControl {
   long getChargingDeadline();
   vendor.lineage.health.ChargingLimitInfo getChargingLimit();
   void setChargingLimit(in vendor.lineage.health.ChargingLimitInfo limit);
+  boolean isChargingBypassSupported();
+  boolean getChargingBypassEnabled();
+  void setChargingBypassEnabled(in boolean enabled);
 }
